@@ -1,0 +1,16 @@
+{
+  "name": "@invest/investment-engine",
+  "version": "1.0.0",
+  "description": "Institutional-grade investment holdings engine microservice with risk management, HWM tracking, and exchange adapter pattern.",
+  "type": "module",
+  "main": "core/InvestmentEngine.js",
+  "scripts": {
+    "start": "node test-run.js",
+    "test": "node test-run.js"
+  },
+  "dependencies": {
+    "decimal.js": "^10.4.3",
+    "pg": "^8.23.0",
+    "uuid": "^14.0.2"
+  }
+}
