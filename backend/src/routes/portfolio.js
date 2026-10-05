@@ -8,11 +8,11 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const balanceResult = await pool.query(
-      `SELECT running_balance FROM ledger WHERE user_id = $1 OR user_id = (SELECT user_id FROM users WHERE id = $1) ORDER BY created_at DESC LIMIT 1`,
-      [req.user.id || req.user.userId]
+      `SELECT main_balance FROM ledger_transactions WHERE user_id = $1 OR user_id = (SELECT user_id FROM users WHERE user_id = $1) ORDER BY created_at DESC LIMIT 1`,
+      [req.user.user_id || req.user.userId]
     );
 
-    const currentBalance = balanceResult.rows.length > 0 ? parseFloat(balanceResult.rows[0].running_balance) : 0.00;
+    const currentBalance = balanceResult.rows.length > 0 ? parseFloat(balanceResult.rows[0].main_balance) : 0.00;
 
     res.status(200).json({ balance: currentBalance, currentBalance });
   } catch (error) {

@@ -14,7 +14,7 @@ router.get('/users', authenticateToken, requireModerator, async (req, res) => {
     const result = await client.query(`
       SELECT 
         u.user_id, u.email, u.tier_name, u.account_status, u.last_login, u.created_at,
-        COALESCE((SELECT running_balance FROM ledger WHERE user_id = u.user_id ORDER BY created_at DESC LIMIT 1), 0) as current_balance
+        COALESCE((SELECT main_balance FROM ledger_transactions WHERE user_id = u.user_id ORDER BY created_at DESC LIMIT 1), 0) as current_balance
       FROM users u
       WHERE u.role = 'USER'
       ORDER BY u.created_at DESC
@@ -46,7 +46,7 @@ router.get('/withdrawals/pending', authenticateToken, requireModerator, async (r
   try {
     const result = await pool.query(`
       SELECT t.id, t.amount, t.created_at, t.tx_hash, t.destination_address, t.transaction_type, u.email, u.user_id,
-      COALESCE((SELECT running_balance FROM ledger WHERE user_id = u.user_id ORDER BY created_at DESC LIMIT 1), 0) as current_balance
+      COALESCE((SELECT main_balance FROM ledger_transactions WHERE user_id = u.user_id ORDER BY created_at DESC LIMIT 1), 0) as current_balance
       FROM transactions t
       JOIN users u ON t.user_id = u.user_id OR t.user_id = u.id
       WHERE t.status = 'PENDING'
@@ -68,7 +68,7 @@ router.post('/withdrawals/:id/approve', authenticateToken, requireModerator, asy
     await client.query('BEGIN');
     
     // Lock transaction
-    const txRes = await client.query('SELECT * FROM transactions WHERE id = $1 FOR UPDATE', [txId]);
+    const txRes = await client.query('SELECT * FROM transactions WHERE user_id = $1 FOR UPDATE', [txId]);
     const tx = txRes.rows[0];
     if (!tx || tx.status !== 'PENDING') throw new Error('Invalid or already processed transaction.');
 
@@ -78,8 +78,8 @@ router.post('/withdrawals/:id/approve', authenticateToken, requireModerator, asy
     if (!user) throw new Error('User not found.');
     
     // Get true total balance from ledger
-    const ledgerRes = await client.query('SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user.user_id]);
-    const currentTotalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].running_balance) : 0;
+    const ledgerRes = await client.query('SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user.user_id]);
+    const currentTotalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].main_balance) : 0;
     
     const amount = parseFloat(tx.amount);
     let newLedgerBalance = currentTotalBalance;
@@ -106,12 +106,12 @@ router.post('/withdrawals/:id/approve', authenticateToken, requireModerator, asy
 
     // Write the new transaction to the ledger to finalize the balance change
     await client.query(
-      'INSERT INTO ledger (user_id, transaction_id, amount, running_balance) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO ledger (user_id, transaction_id, amount, main_balance) VALUES ($1, $2, $3, $4)',
       [user.user_id, tx.id, tx.transaction_type === 'WITHDRAWAL' ? -amount : amount, newLedgerBalance]
     );
 
     // Update transaction status
-    await client.query("UPDATE transactions SET status = 'COMPLETED' WHERE id = $1", [txId]);
+    await client.query("UPDATE transactions SET status = 'COMPLETED' WHERE user_id = $1", [txId]);
 
     await client.query('COMMIT');
 
@@ -149,7 +149,7 @@ router.post('/withdrawals/:id/reject', authenticateToken, requireModerator, asyn
       [id]
     );
 
-    await pool.query("UPDATE transactions SET status = 'REJECTED' WHERE id = $1", [id]);
+    await pool.query("UPDATE transactions SET status = 'REJECTED' WHERE user_id = $1", [id]);
 
     if (txRes.rows.length > 0 && txRes.rows[0].email && typeof sendEmail === 'function') {
       const userEmail = txRes.rows[0].email;

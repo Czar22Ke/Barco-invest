@@ -25,10 +25,10 @@ export class InvestmentEngine {
 
   async _getCurrentBalance(client, userId) {
     const result = await client.query(
-      `SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      `SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
       [userId]
     );
-    return result.rows.length > 0 ? new Decimal(result.rows[0].running_balance) : new Decimal(0);
+    return result.rows.length > 0 ? new Decimal(result.rows[0].main_balance) : new Decimal(0);
   }
 
   async processDeposit(userId, amount, idempotencyKey) {
@@ -50,11 +50,11 @@ export class InvestmentEngine {
       const newBalance = currentBalance.plus(depositAmount);
 
       await client.query(
-        `INSERT INTO ledger (id, transaction_id, user_id, currency, amount, running_balance) VALUES ($1, $2, $3, 'USD', $4, $5)`,
+        `INSERT INTO ledger (id, transaction_id, user_id, currency, amount, main_balance) VALUES ($1, $2, $3, 'USD', $4, $5)`,
         [uuidv4(), txId, userId, depositAmount.toFixed(8), newBalance.toFixed(8)]
       );
 
-      await client.query(`UPDATE users SET high_water_mark = high_water_mark + $1 WHERE id = $2`, [depositAmount.toFixed(8), userId]);
+      await client.query(`UPDATE users SET high_water_mark = high_water_mark + $1 WHERE user_id = $2`, [depositAmount.toFixed(8), userId]);
 
       await client.query('COMMIT');
       return { status: 'COMPLETED', transactionId: txId, newBalance: newBalance.toFixed(8) };
@@ -109,13 +109,13 @@ export class InvestmentEngine {
       const newBalance = currentBalance.minus(withdrawAmount);
 
       await client.query(
-        `INSERT INTO ledger (id, transaction_id, user_id, currency, amount, running_balance) VALUES ($1, $2, $3, 'USD', $4, $5)`,
+        `INSERT INTO ledger (id, transaction_id, user_id, currency, amount, main_balance) VALUES ($1, $2, $3, 'USD', $4, $5)`,
         [uuidv4(), txId, userId, withdrawAmount.negated().toFixed(8), newBalance.toFixed(8)]
       );
 
       const principalWithdrawn = withdrawAmount.minus(realizedProfit);
       const newHWM = Decimal.max(0, hwm.minus(principalWithdrawn));
-      await client.query('UPDATE users SET high_water_mark = $1 WHERE id = $2', [newHWM.toFixed(8), userId]);
+      await client.query('UPDATE users SET high_water_mark = $1 WHERE user_id = $2', [newHWM.toFixed(8), userId]);
 
       await client.query('COMMIT');
       return {

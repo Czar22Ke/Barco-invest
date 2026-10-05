@@ -12,7 +12,7 @@ const authStore = useAuthStore();
 
 onMounted(async () => {
   if (authStore.user) {
-    await syncPortfolioWithAuth(authStore.user.userId || authStore.user.id, authStore.accountTier || authStore.userTier);
+    await syncPortfolioWithAuth(authStore.user.userId || authStore.user.user_id, authStore.accountTier || authStore.userTier);
     portfolioState.balance = parseFloat(authStore.user.balance || authStore.user.currentBalance || portfolioState.balance || 0);
   }
 });

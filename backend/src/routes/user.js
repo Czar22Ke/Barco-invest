@@ -9,7 +9,7 @@ const router = express.Router();
 
 // GET /api/user/profile
 router.get('/profile', authenticateToken, async (req, res) => {
-  const userId = req.user ? (req.user.id || req.user.userId) : null;
+  const userId = req.user ? (req.user.user_id || req.user.userId) : null;
   
   try {
     // 1. Fetch user base attributes
@@ -27,11 +27,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
     // 2. Fetch the latest running balance from the ledger (Single Source of Truth)
     const ledgerRes = await pool.query(
-      'SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      'SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [canonicalUserId]
     );
 
-    const currentBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].running_balance) : parseFloat(user.main_balance || 0);
+    const currentBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].main_balance) : parseFloat(user.main_balance || 0);
 
     // Calculate High-Water Mark (HWM) from explicit hwm_balance column
     const hwmPeak = user.hwm_balance > 0 ? parseFloat(user.hwm_balance) : currentBalance;
@@ -62,7 +62,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // GET /api/user/transactions
 router.get('/transactions', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user ? (req.user.id || req.user.userId) : null;
+    const userId = req.user ? (req.user.user_id || req.user.userId) : null;
 
     const result = await pool.query(
       `SELECT 
@@ -70,10 +70,10 @@ router.get('/transactions', authenticateToken, async (req, res) => {
         COALESCE(l.created_at, t.created_at) as created_at,
         COALESCE(t.transaction_type, 'LEDGER ENTRY') AS transaction_type,
         COALESCE(l.amount, -t.amount) AS amount,
-        l.running_balance,
+        l.main_balance,
         COALESCE(t.status, 'COMPLETED') AS status,
         t.tx_hash
-      FROM ledger l
+      FROM ledger_transactions l
       FULL OUTER JOIN transactions t ON l.transaction_id = t.id
       WHERE (l.user_id = $1 OR l.user_id = (SELECT user_id FROM users WHERE user_id = $1 OR id = $1 LIMIT 1))
          OR (t.user_id = $1 OR t.user_id = (SELECT user_id FROM users WHERE user_id = $1 OR id = $1 LIMIT 1))
@@ -90,7 +90,7 @@ router.get('/transactions', authenticateToken, async (req, res) => {
 
 // POST /api/user/deposit
 router.post('/deposit', authenticateToken, async (req, res) => {
-  const userId = req.user ? (req.user.id || req.user.userId) : null;
+  const userId = req.user ? (req.user.user_id || req.user.userId) : null;
   const { amount, method, txHash } = req.body;
   const depositAmount = parseFloat(amount);
 
@@ -145,7 +145,7 @@ router.post('/deposit', authenticateToken, async (req, res) => {
 
 // POST /api/user/invest
 router.post('/invest', authenticateToken, async (req, res) => {
-  const userId = req.user ? (req.user.id || req.user.userId || req.user.user_id) : null;
+  const userId = req.user ? (req.user.user_id || req.user.userId || req.user.user_id) : null;
   const { amount } = req.body;
   const investAmount = parseFloat(amount);
 
@@ -164,8 +164,8 @@ router.post('/invest', authenticateToken, async (req, res) => {
     const canonicalUserId = user.user_id;
 
     // 2. Get true total balance from ledger
-    const ledgerRes = await client.query('SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [canonicalUserId]);
-    const totalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].running_balance) : 0;
+    const ledgerRes = await client.query('SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [canonicalUserId]);
+    const totalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].main_balance) : 0;
     
     // 3. Calculate Available Funds
     const currentInvested = parseFloat(user.invested_balance || 0);
@@ -205,7 +205,7 @@ router.post('/investment/unlock', authenticateToken, async (req, res) => {
     await client.query('BEGIN');
     
     // 1. Fetch current user state
-    const userId = req.user ? (req.user.user_id || req.user.id || req.user.userId) : null;
+    const userId = req.user ? (req.user.user_id || req.user.user_id || req.user.userId) : null;
     const userRes = await client.query('SELECT invested_balance, profit_balance, user_id FROM users WHERE user_id = $1 OR id = $1 FOR UPDATE', [userId]);
     if (userRes.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -249,10 +249,10 @@ router.post('/investment/unlock', authenticateToken, async (req, res) => {
 
     // 4. Calculate new liquid balance
     const ledgerRes = await client.query(
-      'SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      'SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [user.user_id]
     );
-    const currentLiquidBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].running_balance) : 0;
+    const currentLiquidBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].main_balance) : 0;
     const newLiquidBalance = currentLiquidBalance + finalReturnAmount;
 
     // 5. Log the principal return
@@ -264,7 +264,7 @@ router.post('/investment/unlock', authenticateToken, async (req, res) => {
 
     // 6. Update the ledger
     await client.query(
-      'INSERT INTO ledger (user_id, transaction_id, amount, running_balance) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO ledger (user_id, transaction_id, amount, main_balance) VALUES ($1, $2, $3, $4)',
       [user.user_id, txRes.rows[0].id, finalReturnAmount, newLiquidBalance]
     );
 
@@ -292,7 +292,7 @@ router.post('/investment/unlock', authenticateToken, async (req, res) => {
 
 // POST /api/user/withdraw
 router.post('/withdraw', authenticateToken, async (req, res) => {
-  const userId = req.user ? (req.user.user_id || req.user.id || req.user.userId) : null;
+  const userId = req.user ? (req.user.user_id || req.user.user_id || req.user.userId) : null;
   const { amount, destination } = req.body;
   const withdrawAmount = parseFloat(amount);
 
@@ -315,8 +315,8 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
     const canonicalUserId = user.user_id;
 
     // Get ledger balance
-    const ledgerRes = await client.query('SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [canonicalUserId]);
-    const currentTotalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].running_balance) : 0;
+    const ledgerRes = await client.query('SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [canonicalUserId]);
+    const currentTotalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].main_balance) : 0;
     
     const invested = parseFloat(user.invested_balance || 0);
     const availableFunds = currentTotalBalance - invested;
@@ -347,7 +347,7 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
     if (isAutoApprove) {
       const newLedgerBalance = currentTotalBalance - withdrawAmount;
       await client.query(
-        "INSERT INTO ledger (user_id, transaction_id, amount, running_balance) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO ledger (user_id, transaction_id, amount, main_balance) VALUES ($1, $2, $3, $4)",
         [canonicalUserId, txId, -withdrawAmount, newLedgerBalance]
       );
     }
@@ -367,7 +367,7 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
 
 // PUT /api/user/password
 router.put('/password', authenticateToken, async (req, res) => {
-  const userId = req.user ? (req.user.user_id || req.user.id || req.user.userId) : null;
+  const userId = req.user ? (req.user.user_id || req.user.user_id || req.user.userId) : null;
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {

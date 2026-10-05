@@ -40,10 +40,10 @@ async function executeYieldDistribution() {
 
       // 2. Fetch current total balance from ledger
       const ledgerRes = await client.query(
-        'SELECT running_balance FROM ledger WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+        'SELECT main_balance FROM ledger_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
         [user.user_id]
       );
-      const currentTotalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].running_balance) : 0;
+      const currentTotalBalance = ledgerRes.rows.length > 0 ? parseFloat(ledgerRes.rows[0].main_balance) : 0;
       
       const newLedgerBalance = currentTotalBalance + yieldAmount;
 
@@ -54,7 +54,7 @@ async function executeYieldDistribution() {
       );
 
       await client.query(
-        'INSERT INTO ledger (user_id, transaction_id, amount, running_balance) VALUES ($1, $2, $3, $4)',
+        'INSERT INTO ledger (user_id, transaction_id, amount, main_balance) VALUES ($1, $2, $3, $4)',
         [user.user_id, txRes.rows[0].id, yieldAmount, newLedgerBalance]
       );
 

@@ -20,7 +20,7 @@ async function runTest() {
 
   try {
     // 1. Find a test user (the one registered earlier)
-    const userRes = await pool.query('SELECT id, email FROM users LIMIT 1');
+    const userRes = await pool.query('SELECT user_id, email FROM users LIMIT 1');
     if (userRes.rows.length === 0) {
       console.log('❌ No users found in database. Please register a user on the frontend first.');
       process.exit(1);

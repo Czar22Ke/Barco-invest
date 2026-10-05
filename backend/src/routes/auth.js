@@ -97,7 +97,7 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId || req.user.id;
+    const userId = req.user.userId || req.user.user_id;
     const result = await db.query('SELECT user_id, email, tier, main_balance, status FROM users WHERE user_id = $1', [userId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });

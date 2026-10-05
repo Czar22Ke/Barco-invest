@@ -277,7 +277,7 @@
               <td :class="tx.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'" class="px-4 py-3 text-sm font-mono">
                 {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
               </td>
-              <td class="px-4 py-3 text-sm text-slate-900 dark:text-white font-mono">{{ formatCurrency(tx.running_balance) }}</td>
+              <td class="px-4 py-3 text-sm text-slate-900 dark:text-white font-mono">{{ formatCurrency(tx.main_balance) }}</td>
               <!-- If HWM peak logic applies to row, display here, otherwise render standard formatting -->
               <td class="px-4 py-3 text-sm text-slate-500">--</td>
               <td class="px-4 py-3 text-sm">
@@ -529,7 +529,7 @@ onMounted(async () => {
   await fetchLivePoolRates()
   await fetchTransactions()
   if (authStore.user) {
-    await syncPortfolioWithAuth(authStore.user.userId || authStore.user.id, authStore.accountTier || authStore.userTier)
+    await syncPortfolioWithAuth(authStore.user.userId || authStore.user.user_id, authStore.accountTier || authStore.userTier)
   }
   // Sync rates quietly every 60s
   setInterval(fetchLivePoolRates, 60000)

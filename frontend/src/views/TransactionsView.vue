@@ -74,7 +74,7 @@
                 {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
               </td>
               <td class="px-6 py-4 text-right font-mono text-slate-900 dark:text-white">
-                {{ tx.running_balance !== null && tx.running_balance !== undefined ? formatCurrency(tx.running_balance) : '—' }}
+                {{ tx.main_balance !== null && tx.main_balance !== undefined ? formatCurrency(tx.main_balance) : '—' }}
               </td>
             </tr>
           </tbody>
