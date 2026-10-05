@@ -7,9 +7,21 @@ const transactionRoutes = require('./src/routes/transactions');
 
 const app = express();
 
-// Enable CORS for the Vue frontend
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL 
+].filter(Boolean);
+
+// Enable CORS for the Vue frontend and Vercel
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your Vite/Vue ports
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed for this origin'));
+  },
   credentials: true
 }));
 
