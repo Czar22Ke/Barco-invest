@@ -69,7 +69,7 @@ const handleWithdraw = async () => {
   txMessage.value = '';
   isError.value = false;
   try {
-    const res = await fetch('http://localhost:5000/api/user/withdraw', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/withdraw`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

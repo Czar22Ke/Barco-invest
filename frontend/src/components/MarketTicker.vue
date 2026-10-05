@@ -6,7 +6,7 @@ let pollingInterval;
 
 const fetchMarketData = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/market/ticker');
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/market/ticker`);
     if (res.ok) {
       liveData.value = await res.json();
     }

@@ -14,10 +14,21 @@ require('./src/services/tickerService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL // Your production Vercel URL
+].filter(Boolean);
 
-// Enable CORS for the Vue frontend
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your Vite/Vue ports
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like server-to-server or Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed for this origin'));
+  },
   credentials: true
 }));
 

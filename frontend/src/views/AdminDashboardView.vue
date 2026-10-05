@@ -336,7 +336,7 @@ const isLoadingUsers = ref(false);
 const fetchUsers = async () => {
   isLoadingUsers.value = true;
   try {
-    const res = await fetch('http://localhost:5000/api/admin/users', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/users`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     });
     const data = await res.json();
@@ -368,7 +368,7 @@ const pendingWithdrawals = ref([]);
 
 const fetchPendingWithdrawals = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/admin/withdrawals/pending', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/withdrawals/pending`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     });
     if (res.ok) pendingWithdrawals.value = await res.json();
@@ -416,7 +416,7 @@ onMounted(() => {
 
 const handleProvision = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/admin/provision', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/provision`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -459,7 +459,7 @@ const handleBonusDistribution = async () => {
   if (!window.confirm(confirmMsg)) return;
 
   try {
-    const res = await fetch('http://localhost:5000/api/admin/bonus/distribute', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/bonus/distribute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -494,7 +494,7 @@ const triggerGlobalYield = async () => {
   batchResult.value = null;
   
   try {
-    const response = await fetch('http://localhost:5000/api/admin/trigger-yield', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/trigger-yield`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authStore.token}`

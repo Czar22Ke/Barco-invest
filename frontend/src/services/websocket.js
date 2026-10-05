@@ -35,7 +35,7 @@ export const syncPortfolioWithAuth = async (userId, tier) => {
   const token = localStorage.getItem('user_token');
   if (token) {
     try {
-      const response = await fetch('http://localhost:5000/api/portfolio', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/portfolio`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

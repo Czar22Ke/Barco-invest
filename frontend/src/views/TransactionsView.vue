@@ -129,7 +129,7 @@ const formatDate = (dateString) => {
 
 onMounted(async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/user/transactions', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/transactions`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     });
     if (res.ok) transactions.value = await res.json();

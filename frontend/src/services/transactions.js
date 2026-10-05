@@ -1,6 +1,6 @@
 import { useAuthStore } from '../stores/auth'; // Adjust path if needed
 
-const API_URL = 'http://localhost:5000/api/transactions';
+const API_URL = `${import.meta.env.VITE_API_URL}/transactions`;
 
 async function executeTransaction(endpoint, amount) {
   const authStore = useAuthStore();

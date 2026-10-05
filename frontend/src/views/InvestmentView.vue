@@ -12,7 +12,7 @@ const messageType = ref(''); // 'error' or 'success'
 
 const fetchBalances = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/user/profile', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/profile`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     });
     if (res.ok) {
@@ -49,7 +49,7 @@ const handleInvest = async () => {
   }
 
   try {
-    const res = await fetch('http://localhost:5000/api/user/invest', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/invest`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const confirmUnlock = async () => {
   unlockSuccess.value = false;
 
   try {
-    const res = await fetch('http://localhost:5000/api/user/investment/unlock', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/investment/unlock`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authStore.token}`,

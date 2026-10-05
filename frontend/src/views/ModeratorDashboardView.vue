@@ -98,7 +98,7 @@ const handleLogout = () => {
 
 const fetchUsers = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/moderator/users', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/moderator/users`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     });
     if (res.ok) users.value = await res.json();

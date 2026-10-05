@@ -433,7 +433,7 @@ const dismissBanner = () => {
 // 1. Update fetchUserBalance to map the HWM
 const fetchUserBalance = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/user/profile', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/profile`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     })
     if (res.ok) {
@@ -464,7 +464,7 @@ const fetchUserBalance = async () => {
 // 2. Fetch Live Rates from local market cache
 const fetchLivePoolRates = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/market/ticker')
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/market/ticker`)
     if (res.ok) {
       const marketData = await res.json()
       
@@ -482,7 +482,7 @@ const fetchLivePoolRates = async () => {
 // 3. Fetch Real-Time Audit Stream
 const fetchTransactions = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/user/transactions', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/transactions`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     })
     if (res.ok) {
@@ -497,7 +497,7 @@ const fetchTransactions = async () => {
 
 const handleWithdraw = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/user/withdraw', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/withdraw`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

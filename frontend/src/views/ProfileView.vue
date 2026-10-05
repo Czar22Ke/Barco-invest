@@ -13,7 +13,7 @@ const messageType = ref('');
 
 const fetchProfile = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/user/profile', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/profile`, {
       headers: { 'Authorization': `Bearer ${authStore.token}` }
     });
     if (res.ok) {
@@ -52,7 +52,7 @@ const updatePassword = async () => {
   }
 
   try {
-    const res = await fetch('http://localhost:5000/api/user/password', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/password`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
